@@ -1,3 +1,5 @@
+package ui;
+
 import domain.Friendship;
 import domain.User;
 import domain.network.Network;
@@ -7,7 +9,6 @@ import repository.UserRepository;
 import repository.db.DbException;
 import repository.db.FriendshipDbRepo;
 import repository.db.UserDbRepo;
-import repository.FriendshipsInitializer;
 import repository.file.FriendshipFileRepo;
 import repository.file.UserFileRepo;
 import service.FriendshipService;
@@ -40,9 +41,8 @@ public class Interface {
         Validator<Friendship> fVal = new FriendshipValidator();
         FriendshipRepository fRepo = new FriendshipFileRepo(friendshipsFile, fVal, uRepo);
         FriendshipService fSrv = new FriendshipService(fRepo);
-        FriendshipsInitializer FI = new FriendshipsInitializer(uRepo, fRepo);
-        Network ntw = new Network(uRepo, fRepo);
-        srv = new Service(uSrv, fSrv, ntw);
+        Network network = new Network(uRepo, fRepo);
+        srv = new Service(uSrv, fSrv, network);
     }
 
     /**
@@ -51,7 +51,7 @@ public class Interface {
      */
     public Interface(String url) {
         console = new Scanner(System.in);
-        System.out.print("Databse username: ");
+        System.out.print("Database username: ");
         String username = console.nextLine();
         System.out.print("Database password: ");
         String password = console.nextLine();
@@ -62,15 +62,15 @@ public class Interface {
         Validator<Friendship> fVal = new FriendshipValidator();
         FriendshipDbRepo fRepo = new FriendshipDbRepo(url, username, password, fVal, "friendships");
         FriendshipService fSrv = new FriendshipService(fRepo);
-        Network ntw = new Network(uRepo, fRepo);
-        srv = new Service(uSrv, fSrv, ntw);
+        Network network = new Network(uRepo, fRepo);
+        srv = new Service(uSrv, fSrv, network);
     }
 
     /**
      * Shows the main menu
      * @return the input of the user - String
      */
-    private String meniu() {
+    private String menu() {
         System.out.println("---MENU---");
         System.out.println("1. Add user");
         System.out.println("2. Remove user");
@@ -92,12 +92,13 @@ public class Interface {
      * Starts the program
      */
     public void run() {
-        String com;
+        String command;
         while (true) {
-            com = meniu();
+            command = menu();
             System.out.println();
-            if (com.compareTo("0") == 0) break;
-            switch (com) {
+            if (command.equals("0"))
+                break;
+            switch (command) {
                 case "1" -> addUser();
                 case "2" -> removeUser();
                 case "3" -> addFriendship();
@@ -135,7 +136,7 @@ public class Interface {
     }
 
     /**
-     * Shows an user
+     * Shows a user
      */
     private void showUserByEmail() {
         System.out.print("Write the user's email: ");
@@ -151,7 +152,7 @@ public class Interface {
     }
 
     /**
-     * Updates an user
+     * Updates a user
      */
     private void updateUser() {
         if (srv.usersIsEmpty()) {
@@ -243,15 +244,15 @@ public class Interface {
             System.out.println("Not enough users saved");
             return;
         }
-        Map<Integer, String> usrs = new HashMap<>();
+        Map<Integer, String> users = new HashMap<>();
         Integer i = 0;
         for (User u : srv.getUsers()) {
             i++;
-            usrs.put(i, u.getEmail());
+            users.put(i, u.getEmail());
         }
         System.out.println("----USERS----");
         for (Integer j = 1; j <= i; j++)
-            System.out.println(j + ". " + srv.getUser(usrs.get(j)));
+            System.out.println(j + ". " + srv.getUser(users.get(j)));
         System.out.print("Write the numbers of two users for the friendship: ");
         int a = console.nextInt();
         if (a < 1 || a > i) {
@@ -263,9 +264,12 @@ public class Interface {
             System.out.println("Invalid number");
             return;
         }
+        // AM sa presupun ca aici faci validarea ca 2 cei 2 useri sa existe
+        // cred ca pute codul, mai degraba o faci in service, ca el
+        // are referinte la repo ul de useri si in cauti direct acolo
         console.nextLine();
         try {
-            Friendship f = new Friendship(srv.getUser(usrs.get(a)), srv.getUser(usrs.get(b)));
+            Friendship f = new Friendship(users.get(a), users.get(b));
             srv.addFriendship(f);
             System.out.println("The friendship was added");
         } catch (RepoException e) {
@@ -318,7 +322,7 @@ public class Interface {
     }
 
     /**
-     * Removes an user
+     * Removes a user
      */
     private void removeUser() {
         if (srv.usersIsEmpty()) {
@@ -334,7 +338,7 @@ public class Interface {
         System.out.println("----USERS----");
         for (Integer j = 1; j <= i; j++)
             System.out.println(j + ". " + users.get(j));
-        System.out.print("Write the number of the user you with to remove: ");
+        System.out.print("Write the number of the user you wish to remove: ");
         Integer a = console.nextInt();
         console.nextLine();
         try {
@@ -348,7 +352,7 @@ public class Interface {
     }
 
     /**
-     * Adds an user
+     * Adds a user
      */
     private void addUser() {
         String firstname, lastname, email;
@@ -365,5 +369,4 @@ public class Interface {
             System.out.println(e.getMessage());
         }
     }
-
 }
